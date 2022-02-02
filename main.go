@@ -9,9 +9,8 @@ import (
 )
 
 const (
-	scope        = "https://www.googleapis.com/auth/photoslibrary.readonly"
-	responseType = "code"
-	grantType    = "authorization_code"
+	scope     = "https://www.googleapis.com/auth/photoslibrary.readonly"
+	grantType = "authorization_code"
 )
 
 var secret map[string]interface{}
@@ -46,8 +45,9 @@ func setUp() {
 	oauth.clientSecret = secret["web"].(map[string]interface{})["clientSecret"].(string)
 	oauth.authEndPoint = secret["web"].(map[string]interface{})["authEndPoint"].(string)
 	oauth.tokenEndPoint = secret["web"].(map[string]interface{})["tokenEndPoint"].(string)
-	oauth.state = "xyz"
 	oauth.scope = scope
+	oauth.state = "xyz"
+	oauth.responseType = "code"
 }
 
 func start(w http.ResponseWriter, r *http.Request) {
@@ -55,7 +55,7 @@ func start(w http.ResponseWriter, r *http.Request) {
 	authEndPoint := oauth.authEndPoint
 
 	values := url.Values{}
-	values.Add("response_type", responseType)
+	values.Add("response_type", oauth.responseType)
 	values.Add("client_id", oauth.clientId)
 	values.Add("state", oauth.state)
 	values.Add("scope", oauth.scope)
@@ -67,7 +67,27 @@ func start(w http.ResponseWriter, r *http.Request) {
 func callback(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query()
 
-	res, err := token
+	res, err := tokenRequest(query)
+	if err != nil {
+		log.Println(err)
+	}
+
+	body, err := apiRequest(r, res["accsess_token"].(string))
+	if err != nil {
+		log.Println(err)
+	}
+	w.Write(body)
+
+}
+
+func tokenRequest(q url.Values) (map[string]interface{}, error) {
+
+	tokenEndPoint := oauth.tokenEndPoint
+	values := url.Values{}
+	values.Add("client_id", oauth.clientId)
+	values.Add("client_secret", oauth.clientSecret)
+	values.Add("grantType", grantType)
+
 }
 
 //OAuth2Client is a client
